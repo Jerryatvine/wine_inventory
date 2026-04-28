@@ -55,7 +55,6 @@ export default function LabelAIScanner({ onResult, onClose }) {
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       setStream(s)
-      if (videoRef.current) videoRef.current.srcObject = s
       setCapturing(true)
       setStatus('idle')
       setMessage('')
@@ -64,6 +63,16 @@ export default function LabelAIScanner({ onResult, onClose }) {
       setMessage('Camera unavailable. Make sure you granted permission.')
     }
   }
+
+  // Attach the stream to the <video> only after both the stream and the
+  // element exist. The element is conditionally rendered, so it isn't in
+  // the DOM until `capturing` is true.
+  useEffect(() => {
+    if (capturing && stream && videoRef.current) {
+      videoRef.current.srcObject = stream
+      videoRef.current.play?.().catch(() => {}) // iOS Safari sometimes needs an explicit play()
+    }
+  }, [capturing, stream])
 
   const captureFromCamera = async () => {
     const video = videoRef.current
