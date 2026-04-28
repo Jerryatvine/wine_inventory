@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import LabelCapture from './LabelCapture.jsx'
-import BarcodeScanner from './BarcodeScanner.jsx'
 import LabelAIScanner from './LabelAIScanner.jsx'
 
 const EMPTY = {
@@ -13,16 +12,10 @@ export default function WineForm({ wine, onSave, onClose }) {
   const [form, setForm] = useState(wine ? { ...wine, vintage: wine.vintage ?? '', price: wine.price ?? '', rating: wine.rating ?? '' } : EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-  const [showScanner, setShowScanner] = useState(false)
   const [showAIScanner, setShowAIScanner] = useState(false)
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const setVal = (field, val) => setForm(f => ({ ...f, [field]: val }))
-
-  const handleScanResult = (data) => {
-    setShowScanner(false)
-    setForm(f => ({ ...f, ...Object.fromEntries(Object.entries(data).filter(([, v]) => v)) }))
-  }
 
   const handleAIResult = (data) => {
     // Don't auto-close — the LabelAIScanner shows a "Done" button so the user can review the status first.
@@ -55,10 +48,6 @@ export default function WineForm({ wine, onSave, onClose }) {
 
   return (
     <>
-      {showScanner && (
-        <BarcodeScanner onResult={handleScanResult} onClose={() => setShowScanner(false)} />
-      )}
-
       {showAIScanner && (
         <LabelAIScanner onResult={handleAIResult} onClose={() => setShowAIScanner(false)} />
       )}
@@ -69,7 +58,7 @@ export default function WineForm({ wine, onSave, onClose }) {
           <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.25rem', margin: 0 }}>
             {wine ? 'Edit Wine' : 'Add Wine'}
           </h2>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               type="button"
               onClick={() => setShowAIScanner(true)}
@@ -81,21 +70,9 @@ export default function WineForm({ wine, onSave, onClose }) {
                 <path d="M12 2l1.5 4.5h4.5l-3.6 2.6 1.4 4.4L12 11l-3.8 2.5 1.4-4.4L6 6.5h4.5z"/>
                 <circle cx="12" cy="18" r="2"/>
               </svg>
-              Scan Label (AI)
+              Scan Label
             </button>
-            <button
-              type="button"
-              onClick={() => setShowScanner(true)}
-              className="btn-ghost"
-              style={{ fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                <rect x="7" y="7" width="10" height="10" rx="1"/>
-              </svg>
-              Scan Barcode
-            </button>
-            <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, padding: '0 6px' }}>✕</button>
+            <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
           </div>
         </div>
 
