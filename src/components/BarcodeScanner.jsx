@@ -3,14 +3,12 @@ import React, { useState, useRef, useEffect } from 'react'
 export default function BarcodeScanner({ onResult, onClose }) {
   const [status, setStatus] = useState('idle') // idle | scanning | looking_up | found | error
   const [message, setMessage] = useState('')
-  const videoRef = useRef()
-  const readerRef = useRef()
-  const streamRef = useRef()
+  const videoRef = useRef(null)
+  const controlsRef = useRef(null)
 
   const stopScanner = () => {
-    readerRef.current?.reset()
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    streamRef.current = null
+    try { controlsRef.current?.stop() } catch {}
+    controlsRef.current = null
   }
 
   const handleClose = () => {
@@ -24,24 +22,28 @@ export default function BarcodeScanner({ onResult, onClose }) {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser')
       const reader = new BrowserMultiFormatReader()
-      readerRef.current = reader
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      streamRef.current = stream
-      videoRef.current.srcObject = stream
-
-      reader.decodeFromStream(stream, videoRef.current, async (result, err) => {
-        if (result) {
-          const upc = result.getText()
-          stopScanner()
-          setStatus('looking_up')
-          setMessage(`Found barcode: ${upc}. Looking up wine…`)
-          await lookupUPC(upc)
+      // decodeFromVideoDevice handles the camera stream itself.
+      // Passing undefined deviceId lets the browser pick (it will use environment-facing on mobile when possible).
+      const controls = await reader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current,
+        async (result, err) => {
+          if (result) {
+            const upc = result.getText()
+            stopScanner()
+            setStatus('looking_up')
+            setMessage(`Found barcode: ${upc}. Looking up wine…`)
+            await lookupUPC(upc)
+          }
+          // err is fired on every failed frame — that's normal, ignore it
         }
-      })
+      )
+      controlsRef.current = controls
     } catch (e) {
+      console.error('Barcode scanner error:', e)
       setStatus('error')
-      setMessage(e.message || 'Camera unavailable')
+      setMessage(e?.message || 'Camera unavailable. Make sure you granted camera permission.')
     }
   }
 
@@ -64,16 +66,16 @@ export default function BarcodeScanner({ onResult, onClose }) {
         onResult(wine)
       } else {
         setStatus('error')
-        setMessage(`Barcode ${upc} not found in database. You can enter details manually.`)
-        onResult({ name: '' })
+        setMessage(`Barcode ${upc} not found in the open product database. You can enter details manually.`)
       }
-    } catch {
+    } catch (e) {
+      console.error('Lookup error:', e)
       setStatus('error')
       setMessage('Lookup failed. Check your internet connection.')
-      onResult({ name: '' })
     }
   }
 
+  // Cleanup on unmount
   useEffect(() => () => stopScanner(), [])
 
   return (
@@ -86,21 +88,28 @@ export default function BarcodeScanner({ onResult, onClose }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem',
+      padding: '1rem',
     }}>
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 12,
-        padding: '1.5rem',
+        padding: '1.25rem',
         width: '100%',
         maxWidth: 480,
+        maxHeight: '90vh',
+        overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.1rem', margin: 0 }}>
             Scan Barcode
           </h3>
-          <button className="btn-ghost" onClick={handleClose} style={{ padding: '4px 10px' }}>✕</button>
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close scanner"
+            style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, padding: '4px 10px' }}
+          >✕</button>
         </div>
 
         <video
@@ -115,12 +124,14 @@ export default function BarcodeScanner({ onResult, onClose }) {
             background: '#000',
             display: status === 'scanning' ? 'block' : 'none',
             minHeight: 200,
+            maxHeight: '50vh',
+            objectFit: 'cover',
           }}
         />
 
         {status !== 'scanning' && (
           <div style={{
-            height: 200,
+            minHeight: 200,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -131,34 +142,33 @@ export default function BarcodeScanner({ onResult, onClose }) {
             color: 'var(--muted)',
             fontSize: '0.85rem',
             textAlign: 'center',
-            padding: '1rem',
+            padding: '1.25rem',
           }}>
             {status === 'idle' && <>
               <div style={{ fontSize: '2rem' }}>🔍</div>
-              <div>Point your camera at a wine bottle barcode</div>
+              <div>Point your camera at a wine bottle barcode.</div>
             </>}
-            {status === 'looking_up' && <div>
-              <div style={{ marginBottom: 8 }}>⏳</div>
+            {status === 'looking_up' && <>
+              <div style={{ fontSize: '1.5rem' }}>⏳</div>
               <div>{message}</div>
-            </div>}
-            {(status === 'found' || status === 'error') && <div style={{ color: status === 'found' ? 'var(--gold)' : '#e05555' }}>
-              {message}
-            </div>}
+            </>}
+            {status === 'found' && <div style={{ color: 'var(--gold)' }}>✓ {message}</div>}
+            {status === 'error' && <div style={{ color: '#e07070' }}>{message}</div>}
           </div>
         )}
 
-        <div style={{ marginTop: '1rem', display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           {(status === 'idle' || status === 'error') && (
-            <button className="btn-primary" onClick={startScanning}>
+            <button type="button" className="btn-primary" onClick={startScanning}>
               {status === 'error' ? 'Try Again' : 'Start Scanning'}
             </button>
           )}
           {status === 'scanning' && (
-            <button className="btn-ghost" onClick={() => { stopScanner(); setStatus('idle') }}>
+            <button type="button" className="btn-ghost" onClick={() => { stopScanner(); setStatus('idle'); setMessage('') }}>
               Stop
             </button>
           )}
-          <button className="btn-ghost" onClick={handleClose}>Close</button>
+          <button type="button" className="btn-ghost" onClick={handleClose}>Close</button>
         </div>
       </div>
     </div>
