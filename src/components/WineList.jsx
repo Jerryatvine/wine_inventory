@@ -97,13 +97,11 @@ export default function WineList({ toast }) {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto' }}>
+    <div className="wine-list-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="wine-list-header">
         <div>
-          <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.75rem', fontWeight: 600, margin: 0, color: 'var(--text)' }}>
-            My Cellar
-          </h1>
+          <h1 className="wine-list-title">My Cellar</h1>
           <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 4 }}>
             {loading ? '…' : `${wines.length} ${wines.length === 1 ? 'bottle' : 'bottles'}`}
           </div>
@@ -114,7 +112,7 @@ export default function WineList({ toast }) {
       </div>
 
       {/* Filters + Search */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
+      <div className="wine-list-filters">
         <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -170,13 +168,13 @@ export default function WineList({ toast }) {
 
       {/* Wine Grid / List */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div className="wine-grid">
           {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : wines.length === 0 ? (
         <EmptyState onAdd={() => { setFormWine(null); setShowForm(true) }} filtered={!!(q || country || varietal)} />
       ) : view === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div className="wine-grid">
           {wines.map(wine => (
             <WineCard key={wine.id} wine={wine} onEdit={handleEdit} onDelete={handleDelete} />
           ))}

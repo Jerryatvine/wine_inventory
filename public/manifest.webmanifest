@@ -1,0 +1,18 @@
+{
+  "name": "Wine Cellar",
+  "short_name": "Cellar",
+  "description": "Your personal wine inventory",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a0f0f",
+  "theme_color": "#1a0f0f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
