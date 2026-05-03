@@ -2,12 +2,18 @@ import React, { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 
 export default function Auth() {
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+
+  const switchMode = (next) => {
+    setMode(next)
+    setError(null)
+    setSuccess(null)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,6 +26,12 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         setSuccess('Check your email for a confirmation link before signing in.')
+      } else if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        })
+        if (error) throw error
+        setSuccess('Check your email for a password reset link. It may take a minute or two to arrive.')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
@@ -31,6 +43,18 @@ export default function Auth() {
       setLoading(false)
     }
   }
+
+  const subtitle = {
+    login: 'Sign in to your collection',
+    signup: 'Create your account',
+    forgot: 'Reset your password',
+  }[mode]
+
+  const submitLabel = {
+    login: 'Sign In',
+    signup: 'Create Account',
+    forgot: 'Send Reset Email',
+  }[mode]
 
   return (
     <div style={{
@@ -55,7 +79,7 @@ export default function Auth() {
             Wine Cellar
           </h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 6 }}>
-            {mode === 'login' ? 'Sign in to your collection' : 'Create your account'}
+            {subtitle}
           </p>
         </div>
 
@@ -89,17 +113,31 @@ export default function Auth() {
                 autoFocus
               />
             </div>
-            <div>
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                required
-                minLength={6}
-              />
-            </div>
+            {mode !== 'forgot' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <label style={{ marginBottom: 0 }}>Password</label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}
+                    >
+                      Forgot?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                  required
+                  minLength={6}
+                  style={{ marginTop: '0.375rem' }}
+                />
+              </div>
+            )}
 
             <button
               type="submit"
@@ -107,25 +145,32 @@ export default function Auth() {
               disabled={loading}
               style={{ width: '100%', marginTop: '0.25rem', padding: '0.65rem' }}
             >
-              {loading ? '…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {loading ? '…' : submitLabel}
             </button>
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: 'var(--muted)' }}>
-            {mode === 'login' ? (
+            {mode === 'login' && (
               <>Don't have an account?{' '}
-                <button onClick={() => { setMode('signup'); setError(null); setSuccess(null) }}
+                <button onClick={() => switchMode('signup')}
                   style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
                   Sign up
                 </button>
               </>
-            ) : (
+            )}
+            {mode === 'signup' && (
               <>Already have an account?{' '}
-                <button onClick={() => { setMode('login'); setError(null); setSuccess(null) }}
+                <button onClick={() => switchMode('login')}
                   style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
                   Sign in
                 </button>
               </>
+            )}
+            {mode === 'forgot' && (
+              <button onClick={() => switchMode('login')}
+                style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
+                ← Back to sign in
+              </button>
             )}
           </div>
         </div>

@@ -3,15 +3,23 @@ import { supabase } from './lib/supabase.js'
 import Layout from './components/Layout.jsx'
 import WineList from './components/WineList.jsx'
 import Auth from './components/Auth.jsx'
+import ResetPassword from './components/ResetPassword.jsx'
 
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = loading
+  const [recovery, setRecovery] = useState(false)
   const [page, setPage] = useState('cellar')
   const [toasts, setToasts] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Fired when the user clicks the password-reset link in their email.
+      // The session is valid but we want to force them through the
+      // "set new password" screen before showing the app.
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecovery(true)
+      }
       setSession(session)
     })
     return () => subscription.unsubscribe()
@@ -33,6 +41,12 @@ export default function App() {
         <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Loading…</div>
       </div>
     )
+  }
+
+  // User clicked the reset-password link — force them to set a new one
+  // before they can use the app.
+  if (recovery && session) {
+    return <ResetPassword onDone={() => setRecovery(false)} />
   }
 
   if (!session) return <Auth />
