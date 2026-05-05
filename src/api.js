@@ -74,4 +74,23 @@ export const api = {
     const { data } = supabase.storage.from('wine-labels').getPublicUrl(path)
     return { path: data.publicUrl }
   },
+
+  async generateWineNotes(wine) {
+    const res = await fetch('/api/wine-notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: wine.name,
+        producer: wine.producer,
+        vintage: wine.vintage,
+        varietal: wine.varietal,
+        region: wine.region,
+        country: wine.country,
+        notes: wine.notes,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to generate notes')
+    return data
+  },
 }

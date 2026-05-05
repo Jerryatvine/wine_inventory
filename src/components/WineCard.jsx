@@ -8,8 +8,17 @@ function StarIcon() {
   )
 }
 
+const DRINK_STATUS = {
+  drink_now: { label: 'Ready', color: '#7ab87a', bg: 'rgba(122,184,122,0.15)' },
+  hold: { label: 'Hold', color: '#c9a84c', bg: 'rgba(201,168,76,0.15)' },
+  past_peak: { label: 'Past peak', color: '#e07070', bg: 'rgba(224,112,112,0.15)' },
+  non_aging: { label: 'Drink young', color: '#7aa8c9', bg: 'rgba(122,168,201,0.15)' },
+}
+
 export default function WineCard({ wine, onEdit, onDelete }) {
-  const { name, producer, vintage, varietal, region, country, quantity, rating, label_photo } = wine
+  const { name, producer, vintage, varietal, region, country, quantity, rating, label_photo, ai_notes } = wine
+  const drinkWindow = ai_notes?.drink_window
+  const status = drinkWindow ? DRINK_STATUS[drinkWindow.status] : null
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -77,6 +86,38 @@ export default function WineCard({ wine, onEdit, onDelete }) {
           {region && <Chip>{region}</Chip>}
           {country && <Chip>{country}</Chip>}
         </div>
+
+        {status && (
+          <div
+            title={drinkWindow.recommendation}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              alignSelf: 'flex-start',
+              fontSize: '0.68rem',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 99,
+              background: status.bg,
+              color: status.color,
+              border: `1px solid ${status.color}40`,
+              marginTop: 2,
+            }}
+          >
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 2h8l-1 6a5 5 0 0 1-6 0L8 2z"/>
+              <line x1="12" y1="13" x2="12" y2="20" stroke="currentColor" strokeWidth="2"/>
+              <line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            {status.label}
+            {drinkWindow.start_year && drinkWindow.end_year && (
+              <span style={{ fontWeight: 400, opacity: 0.8 }}>
+                · {drinkWindow.start_year}–{drinkWindow.end_year}
+              </span>
+            )}
+          </div>
+        )}
 
         <div style={{ marginTop: 'auto', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
